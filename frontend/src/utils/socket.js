@@ -10,11 +10,6 @@ const socket = io(SOCKET_URL, {
 
 let mySocketId = null;
 
-socket.on("connect", () => {
-  mySocketId = socket.id;
-  socket.emit("client_connected", { socketId: socket.id });
-});
-
 export function connectSocket() {
   if (!socket.connected) {
     socket.connect();
@@ -35,7 +30,7 @@ export function sendMessageToUser(toSocketId, message) {
   socket.emit("send_message", {
     from: mySocketId,
     to: toSocketId,
-    content: message,
+    content: message?.text,
     timestamp: new Date().toISOString(),
   });
 }
@@ -45,6 +40,7 @@ export function onReceiveMessage(callback) {
 }
 
 export function onConnect(callback) {
+  mySocketId = socket.id;
   socket.on("connect", callback);
 }
 
@@ -52,8 +48,7 @@ export function onDisconnect(callback) {
   socket.on("disconnect", callback);
 }
 
-// Listen for connected clients updates
-export function onConnectedClientsUpdate(callback) {
+export function onConnectedClients(callback) {
   socket.on("connected_clients", callback);
 }
 

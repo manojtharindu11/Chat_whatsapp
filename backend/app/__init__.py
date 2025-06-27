@@ -9,12 +9,5 @@ def create_app():
     
     # Initialize socketio with the app
     socketio.init_app(app)
-    
-    # Import socket events
-    from app.events import socket_events
-    
-    # Register blueprints if needed
-    from app.api.chat.routes import chat_bp
-    app.register_blueprint(chat_bp, url_prefix='/api/chat')
 
     return app

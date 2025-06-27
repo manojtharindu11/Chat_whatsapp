@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
 import Message from "./Message";
-import ClientsList from "./ClientsList";
 import {
   connectSocket,
   disconnectSocket,
+  onConnect,
+  onConnectedClients,
   onReceiveMessage,
   sendMessageToUser,
-} from "../socket";
-import socket from "../socket";
+} from "../utils/socket";
+import socket from "../utils/socket";
+import ClientsList from "./ClientsList";
 
 const Chat = () => {
-  const [roomId, setRoomId] = useState("");
-  const [roomInput, setRoomInput] = useState("");
   const [messages, setMessages] = useState([
     { text: "Hi there!", sender: "other" },
     { text: "Hello! How are you?", sender: "me" },
@@ -24,19 +24,15 @@ const Chat = () => {
     const message = {
       text: input,
       sender: "me",
-      roomId,
     };
     setMessages([...messages, message]);
-    sendMessageToUser(message);
+    sendMessageToUser(11,message);
     setInput("");
   };
 
   useEffect(() => {
-    if (!roomId) return;
     connectSocket();
-    // Join the room after connecting
-    socket.emit("join_room", roomId);
-    socket.on("connect", () => {
+    onConnect(() => {
       console.log("Connected with socket ID:", socket.id);
     });
     onReceiveMessage((message) => {
@@ -44,48 +40,14 @@ const Chat = () => {
         setMessages((prevMessages) => [...prevMessages, message]);
       }
     });
-    socket.on("connected_clients", (clientList) => {
+    onConnectedClients((clientList) => {
+      console.log("Connected clients:", clientList);
       setClients(clientList);
     });
     return () => {
       disconnectSocket();
     };
-  }, [roomId]);
-
-  if (!roomId) {
-    return (
-      <div
-        className="room-id-container"
-        style={{
-          padding: 32,
-          textAlign: "center",
-        }}
-      >
-        <h2>Enter Room ID to Join</h2>
-        <input
-          value={roomInput}
-          onChange={(e) => setRoomInput(e.target.value)}
-          placeholder="Room ID"
-          style={{
-            padding: 8,
-            fontSize: 16,
-            marginRight: 8,
-          }}
-        />
-        <button
-          onClick={() => {
-            if (roomInput.trim()) setRoomId(roomInput.trim());
-          }}
-          style={{
-            padding: 8,
-            fontSize: 16,
-          }}
-        >
-          Join Room
-        </button>
-      </div>
-    );
-  }
+  }, []);
 
   return (
     <div className="chat-container">
@@ -96,9 +58,7 @@ const Chat = () => {
           borderRadius: 4,
           marginBottom: 10,
         }}
-      >
-        <strong>Room ID:</strong> {roomId}
-      </div>
+      ></div>
       <ClientsList clients={clients} />
       <div className="messages">
         {messages.map((msg, index) => (

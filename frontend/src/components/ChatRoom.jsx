@@ -65,22 +65,20 @@ export default function ChatRoom() {
       timestamp: new Date().toISOString(),
     });
     sendMessageToUser(selectedClient.socketId, message.trim());
-    setChatMessages((prev) => [
-      ...prev,
-      {
-        content: message,
-        from: myId,
-        to: selectedClient.socketId,
-        timestamp: new Date().toISOString(),
-        isReceived: false,
-      },
-    ]);
+    // Do not add the message locally; rely on backend echo for both sender and receiver
     setMessage("");
   };
 
   // Filter out self from connectedClients for display
   const filteredClients = connectedClients.filter(
     (client) => client.socketId !== myId
+  );
+
+  // Helper: show all messages between me and selected client
+  const visibleMessages = chatMessages.filter(
+    (msg) =>
+      (msg.from === myId && msg.to === selectedClient?.socketId) ||
+      (msg.from === selectedClient?.socketId && msg.to === myId)
   );
 
   return (
@@ -114,25 +112,17 @@ export default function ChatRoom() {
           <>
             <h3>Chat with: {selectedClient.socketId}</h3>
             <div className="messages">
-              {chatMessages
-                .filter(
-                  (msg) =>
-                    (msg.from === myId && msg.to === selectedClient.socketId) ||
-                    (msg.from === selectedClient.socketId && msg.to === myId)
-                )
-                .map((msg, index) => (
-                  <div
-                    key={index}
-                    className={`message ${
-                      msg.isReceived ? "received" : "sent"
-                    }`}
-                  >
-                    <p>{msg.content}</p>
-                    <small>
-                      {new Date(msg.timestamp).toLocaleTimeString()}
-                    </small>
-                  </div>
-                ))}
+              {visibleMessages.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`message ${
+                    msg.from === myId ? "sent" : "received"
+                  }`}
+                >
+                  <p>{msg.content}</p>
+                  <small>{new Date(msg.timestamp).toLocaleTimeString()}</small>
+                </div>
+              ))}
             </div>
             <form onSubmit={handleSendMessage}>
               <input

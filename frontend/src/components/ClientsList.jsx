@@ -1,6 +1,13 @@
 import React from "react";
 
-const ClientsList = ({ clients }) => (
+const getClientLabel = (client) => {
+  if (client.name) return client.name;
+  if (client.username) return client.username;
+  if (client.displayName) return client.displayName;
+  return client.socketId || client;
+};
+
+const ClientsList = ({ clients, selected, onSelect }) => (
   <div
     className="clients-list"
     style={{
@@ -11,11 +18,26 @@ const ClientsList = ({ clients }) => (
     }}
   >
     <strong>Connected Clients:</strong>
-    <ul style={{ margin: 0, paddingLeft: 20 }}>
+    <select
+      style={{ width: "100%", padding: 6, marginTop: 6 }}
+      value={selected || ""}
+      onChange={(e) =>
+        onSelect &&
+        onSelect(clients.find((c) => (c.socketId || c) === e.target.value))
+      }
+    >
+      <option value="" disabled>
+        -- Select a client --
+      </option>
       {clients.map((client) => (
-        <li key={client.socketId || client}>{client.socketId || client}</li>
+        <option
+          key={client.socketId || client}
+          value={client.socketId || client}
+        >
+          {getClientLabel(client)}
+        </option>
       ))}
-    </ul>
+    </select>
   </div>
 );
 
