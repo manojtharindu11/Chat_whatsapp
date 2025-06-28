@@ -26,7 +26,7 @@ const Chat = () => {
       sender: "me",
     };
     setMessages([...messages, message]);
-    sendMessageToUser(11,message);
+    sendMessageToUser(null, message);
     setInput("");
   };
 
@@ -36,9 +36,8 @@ const Chat = () => {
       console.log("Connected with socket ID:", socket.id);
     });
     onReceiveMessage((message) => {
-      if (message.roomId === roomId) {
-        setMessages((prevMessages) => [...prevMessages, message]);
-      }
+      console.log("Received message:", message);
+      setMessages((prevMessages) => [...prevMessages, message]);
     });
     onConnectedClients((clientList) => {
       console.log("Connected clients:", clientList);
@@ -46,6 +45,10 @@ const Chat = () => {
     });
     return () => {
       disconnectSocket();
+      socket.off("connect");
+      socket.off("receive_message");
+      socket.off("connected_clients");
+      console.log("Socket disconnected");
     };
   }, []);
 

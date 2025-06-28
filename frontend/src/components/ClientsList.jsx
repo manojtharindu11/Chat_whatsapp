@@ -1,9 +1,6 @@
 import React from "react";
 
 const getClientLabel = (client) => {
-  if (client.name) return client.name;
-  if (client.username) return client.username;
-  if (client.displayName) return client.displayName;
   return client.socketId || client;
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import ClientsList from "./ClientsList";
 import {
   connectSocket,
   disconnectSocket,
@@ -11,7 +12,7 @@ import {
 
 export default function ChatRoom() {
   const [connectedClients, setConnectedClients] = useState([]);
-  const [selectedClient, setSelectedClient] = useState(null);
+  const [selectedClientId, setSelectedClientId] = useState("");
   const [message, setMessage] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
   const [myId, setMyId] = useState(null);
@@ -19,21 +20,23 @@ export default function ChatRoom() {
 
   useEffect(() => {
     connectSocket();
-
-    // Update myId on every socket connect event
     onConnect(() => {
       setMyId(getMySocketId());
       myIdRef.current = getMySocketId();
     });
-
-    // Listen for connected clients updates
     onConnectedClientsUpdate((clients) => {
+      console.log("Connected clients updated:", clients);
       setConnectedClients(clients);
+      // If selected client is not in the new list, clear selection
+      if (
+        selectedClientId &&
+        !clients.some((c) => c.socketId === selectedClientId)
+      ) {
+        setSelectedClientId("");
+      }
     });
-
-    // Listen for incoming messages
-    onReceiveMessage((data) => {
-      console.log("Received message:", data, "My ID:", myIdRef.current);
+    // Only add the receive handler once
+    const receiveHandler = (data) => {
       setChatMessages((prev) => [
         ...prev,
         {
@@ -44,11 +47,12 @@ export default function ChatRoom() {
           isReceived: data.from !== myIdRef.current,
         },
       ]);
-    });
-
+    };
+    onReceiveMessage(receiveHandler);
     return () => {
       disconnectSocket();
     };
+    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
@@ -57,15 +61,8 @@ export default function ChatRoom() {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!selectedClient || !message.trim() || !myId) return;
-    console.log("Sending message:", {
-      from: myId,
-      to: selectedClient.socketId,
-      content: message,
-      timestamp: new Date().toISOString(),
-    });
-    sendMessageToUser(selectedClient.socketId, message.trim());
-    // Do not add the message locally; rely on backend echo for both sender and receiver
+    if (!selectedClientId || !message.trim() || !myId) return;
+    sendMessageToUser(selectedClientId, message.trim());
     setMessage("");
   };
 
@@ -73,44 +70,28 @@ export default function ChatRoom() {
   const filteredClients = connectedClients.filter(
     (client) => client.socketId !== myId
   );
+  const selectedClient = connectedClients.find(
+    (c) => c.socketId === selectedClientId
+  );
 
-  // Helper: show all messages between me and selected client
+  // Show all messages between me and selected client
   const visibleMessages = chatMessages.filter(
     (msg) =>
-      (msg.from === myId && msg.to === selectedClient?.socketId) ||
-      (msg.from === selectedClient?.socketId && msg.to === myId)
+      (msg.from === myId && msg.to === selectedClientId) ||
+      (msg.from === selectedClientId && msg.to === myId)
   );
 
   return (
     <div className="chat-room">
-      <div className="connected-clients">
-        <h3>Online Users</h3>
-        <div style={{ fontSize: "0.9em", marginBottom: 10 }}>
-          <b>Your Socket ID:</b>
-          <div style={{ wordBreak: "break-all" }}>{myId || "..."}</div>
-        </div>
-        <ul>
-          {filteredClients.length === 0 ? (
-            <li>No other users online</li>
-          ) : (
-            filteredClients.map((client) => (
-              <li
-                key={client.socketId}
-                className={
-                  selectedClient?.socketId === client.socketId ? "selected" : ""
-                }
-                onClick={() => setSelectedClient(client)}
-              >
-                User: {client.socketId}
-              </li>
-            ))
-          )}
-        </ul>
-      </div>
+      <ClientsList
+        clients={filteredClients}
+        selected={selectedClientId}
+        onSelect={(client) => setSelectedClientId(client?.socketId || "")}
+      />
       <div className="chat-area">
         {selectedClient ? (
           <>
-            <h3>Chat with: {selectedClient.socketId}</h3>
+            <h3>Chat with: {selectedClient.name || selectedClient.socketId}</h3>
             <div className="messages">
               {visibleMessages.map((msg, index) => (
                 <div
