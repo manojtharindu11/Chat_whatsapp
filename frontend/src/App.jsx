@@ -1,10 +1,6 @@
-import { useState } from "react";
-
+import Chat from "./pages/chat.jsx";
 function App() {
-  return (
-    <>
-    </>
-  );
+  return <Chat />;
 }
 
 export default App;
