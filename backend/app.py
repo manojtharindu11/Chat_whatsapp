@@ -4,14 +4,26 @@ monkey.patch_all()
 from flask import Flask, request
 from flask_socketio import SocketIO
 from gevent.lock import Semaphore  # gevent-safe lock
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent", logger=True, engineio_logger=True)
 
 # Set to keep track of connected client socket IDs
 connected_clients = set()
 # Semaphore for thread-safe access to connected_clients
 clients_lock = Semaphore()
+
+clients = [
+    {"id": 1, "name": "Nilanthini", "whatsapp": "0771234567"},
+    {"id": 2, "name": "Chamod", "whatsapp": "0777654321"},
+    {"id": 3, "name": "Manoj", "whatsapp": "0763241208"},
+]
+
+@app.route("/clients", methods=["GET"])
+def get_clients():
+    return {"clients": clients}
 
 # Event handler for new client connection
 @socketio.on("connect")
