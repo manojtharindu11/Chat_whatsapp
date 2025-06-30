@@ -1,10 +1,4 @@
-import React, { useState } from "react";
-
-const clients = [
-  { id: 1, name: "Nilanthini" },
-  { id: 2, name: "Chamod" },
-  { id: 3, name: "Madushan" },
-];
+import React, { useEffect, useState } from "react";
 
 const initialChatMessages = {
   1: [
@@ -22,7 +16,8 @@ const initialChatMessages = {
 };
 
 function Chat() {
-  const [selectedClient, setSelectedClient] = useState(clients[0].id);
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState();
   const [chatMessages, setChatMessages] = useState(initialChatMessages);
   const [inputValue, setInputValue] = useState("");
 
@@ -117,10 +112,37 @@ function Chat() {
     },
   };
 
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const response = await fetch("http://localhost:5002/clients");
+      const data = await response.json();
+      if (Array.isArray(data.clients) && data.clients.length > 0) {
+        setClients(data.clients);
+        setSelectedClient(data.clients[0].id);
+      } else {
+        setClients([]);
+        setSelectedClient(undefined);
+      }
+    } catch (err) {
+      setClients([]);
+      setSelectedClient(undefined);
+    }
+  };
+
   const handleSend = (e) => {
     e.preventDefault();
     const message = inputValue.trim();
     if (message) {
+      const messageObj = {
+        from: "Me",
+        text: message,
+        to: selectedClient,
+      };
+      console.log("Sending message:", messageObj);
       setChatMessages((prev) => ({
         ...prev,
         [selectedClient]: [
@@ -136,10 +158,12 @@ function Chat() {
   const selectedClientObj = clients.find((c) => c.id === selectedClient);
   const getInitials = (name) =>
     name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
+      ? name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase()
+      : "";
 
   return (
     <div style={styles.container}>
@@ -163,12 +187,12 @@ function Chat() {
         <div style={styles.chatArea}>
           <div style={styles.chatHeader}>
             <span style={styles.avatar}>
-              {getInitials(selectedClientObj.name)}
+              {getInitials(selectedClientObj?.name)}
             </span>
-            <span style={styles.chatHeaderName}>{selectedClientObj.name}</span>
+            <span style={styles.chatHeaderName}>{selectedClientObj?.name}</span>
           </div>
           <div style={styles.messagesBox}>
-            {chatMessages[selectedClient].map((msg, idx) => (
+            {(chatMessages[selectedClient] || []).map((msg, idx) => (
               <div key={idx} style={styles.message(msg.from === "Me")}>
                 <span style={styles.from}>{msg.from}:</span> {msg.text}
               </div>
