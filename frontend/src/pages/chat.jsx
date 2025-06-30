@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import socket from "../utils/socket";
 
 const initialChatMessages = {
   1: [
@@ -116,6 +117,22 @@ function Chat() {
     fetchClients();
   }, []);
 
+  useEffect(() => {
+    socket.connect();
+
+    socket.on("connect", () => {
+      console.log("connected", socket.id);
+    });
+
+    socket.on("receive_message", (data) => {
+      console.log("message received", data);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
   const fetchClients = async () => {
     try {
       const response = await fetch("http://localhost:5002/clients");
@@ -139,10 +156,12 @@ function Chat() {
     if (message) {
       const messageObj = {
         from: "Me",
-        text: message,
+        content: message,
         to: selectedClient,
+        timestamp: new Date().toISOString(),
       };
       console.log("Sending message:", messageObj);
+      socket.emit("send_message", messageObj);
       setChatMessages((prev) => ({
         ...prev,
         [selectedClient]: [
