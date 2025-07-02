@@ -59,10 +59,31 @@ def send_message(data):
         print("✅ Message sent successfully")
     else:
         print("❌ Failed to send message:", response.status_code, response.text)
+        
+@app.route("/webhook", methods=["GET"])
+def verify_webhook():
+    # Verify the webhook with the token
+    if request.args.get("hub.mode") == "subscribe" and request.args.get("hub.verify_token") == WEBHOOK_VERIFY_TOKEN:
+        print("Webhook verified successfully")
+        return request.args.get("hub.challenge"), 200
+    else:
+        print("Webhook verification failed")
+        return "Verification failed", 403
+    
+@app.route("/webhook", methods=["POST"])
+def handle_webhook():
+    # Handle incoming webhook events
+    data = request.json
+    print("Received webhook event:", data)
+    return "Webhook event received", 200
 
 @app.route("/clients", methods=["GET"])
 def get_clients():
     return {"clients": clients}
+
+@app.route("/", methods=["GET"])
+def index():
+    return "Welcome to the WhatsApp Chat Server! Checkout README.md for more details."
 
 # Event handler for new client connection
 @socketio.on("connect")
