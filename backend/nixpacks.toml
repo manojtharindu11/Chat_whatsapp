@@ -1,8 +1,22 @@
 [phases.setup]
-nixPkgs = ["python311", "gcc", "python311Packages.pip"]
+nixPkgs = [
+  "python311"
+  "gcc"
+  "python311Packages.flask"
+  "python311Packages.flask-sqlalchemy"
+  "python311Packages.flask-cors"
+  "python311Packages.gevent"
+  "python311Packages.greenlet"
+  "python311Packages.python-dotenv"
+]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt"]
+cmds = [
+  "python -m venv /opt/venv",
+  ". /opt/venv/bin/activate",
+  "pip install --upgrade pip setuptools wheel",
+  "pip install -r requirements.txt"
+]
 
 [start]
-cmd = "python app.py"
+cmd = ". /opt/venv/bin/activate && python app.py"
