@@ -64,6 +64,50 @@ def send_message(data):
     else:
         print("❌ Failed to send message:", response.status_code, response.text)
         
+# Helper function to emit the list of currently connected clients to all clients
+def emit_connected_clients():
+    with clients_lock:
+        client_list = [{"socketId": sid} for sid in connected_clients]
+    print(f"Emitting connected clients: {client_list}")
+    socketio.emit("connected_clients", client_list)
+    
+def send_response_message(data):
+    entry = data.get("entry", [])
+    if not entry:
+        logger.warning("No entry found in the webhook data")
+        return
+
+    changes = entry[0].get("changes", [])
+    if not changes:
+        logger.warning("No changes found in the webhook data")
+        return
+
+    value = changes[0].get("value", {})
+    messages = value.get("messages", [])
+    if not messages:
+        logger.warning("No messages found in the webhook data")
+        return
+
+    message = messages[0]
+    if message.get("type") == "text":
+        from_ = message.get("from", "")
+        if not from_:
+            logger.warning("No sender found in the message")
+            return
+
+        content = message.get("text", {}).get("body", "")
+        to = "self"
+        time_stamp = message.get("timestamp", "")
+
+        socketio.emit("receive_message", {
+            "from": from_,
+            "content": content,
+            "to": to,
+            "timestamp": time_stamp
+        })
+    else:
+        logger.info("Message type is not text, ignoring.")
+
 @app.route("/webhook", methods=["GET"])
 def verify_webhook():
     # Verify the webhook with the token
@@ -79,7 +123,7 @@ def verify_webhook():
 def handle_webhook():
     # Handle incoming webhook events
     data = request.json
-    print("Received webhook event:", data)
+    send_response_message(data)
     logger.info(f"Received webhook event: {data}")
     return "Webhook event received", 200
 
@@ -114,23 +158,13 @@ def handle_disconnect():
 # Event handler for receiving a message from a client
 @socketio.on("send_message")
 def handle_send_message(data):
-    to_sid = data.get("to")
-    if to_sid:
-        # Send message to a specific client
-        print(f"Sending message to {to_sid}: {data}")
-        send_message(data)
-        socketio.emit("receive_message", data, to=to_sid)
+    user_sid = request.sid
+    if user_sid:
+        response = send_message(data)
+        socketio.emit("send_message_response", response, to=user_sid)
     else:
         # Broadcast message to all clients
-        print(f"Broadcasting message: {data}")
-        socketio.emit("receive_message", data)
-
-# Helper function to emit the list of currently connected clients to all clients
-def emit_connected_clients():
-    with clients_lock:
-        client_list = [{"socketId": sid} for sid in connected_clients]
-    print(f"Emitting connected clients: {client_list}")
-    socketio.emit("connected_clients", client_list)
+        socketio.emit("send_message_response", "Something went wrong", broadcast=True)
 
 # Entry point: run the server with gevent and WebSocket support
 if __name__ == "__main__":
