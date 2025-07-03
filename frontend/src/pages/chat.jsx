@@ -128,6 +128,14 @@ function Chat() {
       console.log("message received", data);
     });
 
+    socket.on("send_message_response", (data) => {
+      console.log("message sent response", data);
+    });
+
+    socket.on("connected_clients", (data) => {
+      console.log("Connected clients:", data);
+    });
+
     return () => {
       socket.disconnect();
     };
@@ -189,7 +197,7 @@ function Chat() {
       <h1 style={styles.title}>Chat-Whatsapp</h1>
       <div style={styles.flex}>
         <div style={styles.sidebar}>
-          <h2 style={styles.sidebarTitle}>Online Clients</h2>
+          <h2 style={styles.sidebarTitle}>All Chats</h2>
           <ul style={{ listStyle: "none", padding: 0 }}>
             {clients.map((client) => (
               <li
