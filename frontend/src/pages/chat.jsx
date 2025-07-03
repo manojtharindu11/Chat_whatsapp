@@ -143,7 +143,7 @@ function Chat() {
 
   const fetchClients = async () => {
     try {
-      const response = await fetch("http://localhost:5002/clients");
+      const response = await fetch(import.meta.env.VITE_API_URL + "/clients");
       const data = await response.json();
       if (Array.isArray(data.clients) && data.clients.length > 0) {
         setClients(data.clients);
