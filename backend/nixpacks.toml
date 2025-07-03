@@ -1,8 +1,8 @@
 [phases.setup]
-nixPkgs = ["gcc" ]
+nixPkgs = ["python311", "gcc"]
 
-[phases.build]
-cmds = ["python -m pip install -r requirements.txt"]
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
 
-[phases.start]
+[start]
 cmd = "python app.py"
