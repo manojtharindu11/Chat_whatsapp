@@ -9,6 +9,9 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 import requests
+import logging
+
+logger = logging.basicConfig(level=logging.INFO)
 
 load_dotenv()  # load variables from .env
 
@@ -65,9 +68,10 @@ def verify_webhook():
     # Verify the webhook with the token
     if request.args.get("hub.mode") == "subscribe" and request.args.get("hub.verify_token") == WEBHOOK_VERIFY_TOKEN:
         print("Webhook verified successfully")
+        logger.info("Webhook verified successfully")
         return request.args.get("hub.challenge"), 200
     else:
-        print("Webhook verification failed")
+        logger.warning("Webhook verification failed")
         return "Verification failed", 403
     
 @app.route("/webhook", methods=["POST"])
@@ -75,6 +79,7 @@ def handle_webhook():
     # Handle incoming webhook events
     data = request.json
     print("Received webhook event:", data)
+    logger.info(f"Received webhook event: {data}")
     return "Webhook event received", 200
 
 @app.route("/clients", methods=["GET"])
