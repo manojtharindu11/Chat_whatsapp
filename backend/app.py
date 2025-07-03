@@ -11,7 +11,8 @@ import os
 import requests
 import logging
 
-logger = logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()  # load variables from .env
 
