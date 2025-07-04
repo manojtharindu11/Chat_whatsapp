@@ -91,6 +91,7 @@ def send_response_message(data):
     message = messages[0]
     if message.get("type") == "text":
         from_ = message.get("from", "")
+        from_id = [client["id"] for client in clients if client["whatsapp"] == from_]
         if not from_:
             logger.warning("No sender found in the message")
             return
@@ -100,7 +101,7 @@ def send_response_message(data):
         time_stamp = message.get("timestamp", "")
 
         socketio.emit("receive_message", {
-            "from": from_,
+            "from": from_id,
             "content": content,
             "to": to,
             "timestamp": time_stamp
