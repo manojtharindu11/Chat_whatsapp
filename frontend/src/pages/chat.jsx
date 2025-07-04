@@ -14,6 +14,7 @@ function Chat() {
   const [newPhone, setNewPhone] = useState("");
   const [selectedCountryCode, setSelectedCountryCode] = useState("+94");
   const [countryCodes, setCountryCodes] = useState([]);
+  const [connectionError, setConnectionError] = useState(false);
 
   const styles = {
     container: {
@@ -112,12 +113,28 @@ function Chat() {
 
   useEffect(() => {
     socket.connect();
-    socket.on("connect", () => console.log("connected", socket.id));
+    socket.on("connect", () => {
+      setConnectionError(false);
+      console.log("connected", socket.id);
+    });
+    socket.on("disconnect", () => {
+      setConnectionError(true);
+    });
+    socket.on("connect_error", () => {
+      setConnectionError(true);
+    });
     socket.on("receive_message", handleReceivedMessages);
     socket.on("send_message_response", (data) =>
       console.log("message sent response", data)
     );
-    return () => socket.disconnect();
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("connect_error");
+      socket.off("receive_message");
+      socket.off("send_message_response");
+      socket.disconnect();
+    };
   }, []);
 
   const fetchClients = async () => {
@@ -330,6 +347,34 @@ function Chat() {
             </button>
           </form>
         </div>
+      </div>
+      {/* Connection error message at the bottom */}
+      <div
+        style={{
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          textAlign: "center",
+          zIndex: 1000,
+        }}
+      >
+        {connectionError && (
+          <span
+            style={{
+              color: "#b91c1c",
+              background: "#fef2f2",
+              fontSize: 13,
+              padding: 6,
+              borderRadius: 4,
+              margin: 8,
+              display: "inline-block",
+            }}
+          >
+            Connection lost. The backend may be unavailable (token expired or
+            free hosting limit exceeded).
+          </span>
+        )}
       </div>
     </div>
   );

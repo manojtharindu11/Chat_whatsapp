@@ -189,5 +189,11 @@ The frontend is built with React and Vite, located in the `frontend/` directory.
 
 ## Demo
 
-- **Backend API:** [https://chatwhatsapp-production-3a94.up.railway.app/](https://chatwhatsapp-production-3a94.up.railway.app/)
-- **Frontend:** [https://chat-whatsapp-manoj-thilakarathnas-projects.vercel.app/](https://chat-whatsapp-manoj-thilakarathnas-projects.vercel.app/)
+> **Live Demo:**
+
+| Service       | URL                                                                                                                       | Hosting |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Backend (API) | [chatwhatsapp-production-3a94.up.railway.app](https://chatwhatsapp-production-3a94.up.railway.app/)                       | Railway |
+| Frontend (UI) | [chat-whatsapp-manoj-thilakarathnas-projects.vercel.app](https://chat-whatsapp-manoj-thilakarathnas-projects.vercel.app/) | Vercel  |
+
+Both services are deployed for public access. The frontend is hosted on **Vercel** and the backend API is hosted on **Railway**.
