@@ -1,7 +1,5 @@
-<div align="center">
-  <h1>WhatsApp Business API Chat Integration</h1>
-  <p>Send and receive WhatsApp messages using the WhatsApp Business Cloud API with a modern React frontend and Python Flask backend.</p>
-</div>
+<h1>WhatsApp Business API Chat Integration</h1>
+<p>Send and receive WhatsApp messages using the WhatsApp Business Cloud API with a modern React frontend and Python Flask backend.</p>
 
 ---
 
