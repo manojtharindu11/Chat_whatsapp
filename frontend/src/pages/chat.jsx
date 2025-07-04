@@ -1,20 +1,7 @@
 import React, { useEffect, useState } from "react";
 import socket from "../utils/socket";
 
-const initialChatMessages = {
-  1: [
-    { from: "User 1", text: "Hello!" },
-    { from: "Me", text: "Hi User 1!" },
-  ],
-  2: [
-    { from: "User 2", text: "Hi there!" },
-    { from: "Me", text: "Hello User 2!" },
-  ],
-  3: [
-    { from: "User 3", text: "Hey!" },
-    { from: "Me", text: "Hi User 3!" },
-  ],
-};
+const initialChatMessages = {};
 
 function Chat() {
   const [clients, setClients] = useState([]);
@@ -126,6 +113,7 @@ function Chat() {
 
     socket.on("receive_message", (data) => {
       console.log("message received", data);
+      handleReceivedMessages(data);
     });
 
     socket.on("send_message_response", (data) => {
@@ -140,6 +128,15 @@ function Chat() {
       socket.disconnect();
     };
   }, []);
+
+  const handleReceivedMessages = (data) => {
+    if (data && data.from && data.to && data.content && data.timestamp) {
+      setChatMessages((prev) => ({
+        ...prev,
+        [data.from.name]: [...(prev[data.from] || []), data],
+      }));
+    }
+  };
 
   const fetchClients = async () => {
     try {
