@@ -132,8 +132,8 @@ function Chat() {
       console.log("message sent response", data);
     });
 
-    socket.on("connected_clients", (data) => {
-      console.log("Connected clients:", data);
+    socket.on("connected_users", (data) => {
+      console.log("Connected users:", data);
     });
 
     return () => {

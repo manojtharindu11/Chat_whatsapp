@@ -25,10 +25,10 @@ app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent", logger=True, engineio_logger=True)
 
-# Set to keep track of connected client socket IDs
-connected_clients = set()
-# Semaphore for thread-safe access to connected_clients
-clients_lock = Semaphore()
+# Set to keep track of connected user socket IDs
+connected_users = set()
+# Semaphore for thread-safe access to connected_users
+users_lock = Semaphore()
 
 clients = [
     {"id": 1, "name": "Nilanthini", "whatsapp": "0771234567"},
@@ -64,13 +64,13 @@ def send_message(data):
     else:
         print("❌ Failed to send message:", response.status_code, response.text)
         
-# Helper function to emit the list of currently connected clients to all clients
-def emit_connected_clients():
-    with clients_lock:
-        client_list = [{"socketId": sid} for sid in connected_clients]
-    print(f"Emitting connected clients: {client_list}")
-    socketio.emit("connected_clients", client_list)
-    
+# Helper function to emit the list of currently connected users to all users
+def emit_connected_users():
+    with users_lock:
+        users_list = [{"socketId": sid} for sid in connected_users]
+    print(f"Emitting connected users: {users_list}")
+    socketio.emit("connected_users", users_list)
+
 def send_response_message(data):
     entry = data.get("entry", [])
     if not entry:
@@ -135,27 +135,27 @@ def get_clients():
 def index():
     return "Welcome to the WhatsApp Chat Server! Checkout README.md for more details."
 
-# Event handler for new client connection
+# Event handler for new user connection
 @socketio.on("connect")
 def handle_connect():
-    print(f"Client connected: {request.sid}")
-    with clients_lock:
-        connected_clients.add(request.sid)
-    emit_connected_clients()
-    
-@socketio.on("get_client_list")
-def send_client_list(args):
-    emit_connected_clients()
+    print(f"User connected: {request.sid}")
+    with users_lock:
+        connected_users.add(request.sid)
+    emit_connected_users()
+
+@socketio.on("get_user_list")
+def send_user_list(args):
+    emit_connected_users()
 
 # Event handler for client disconnection
 @socketio.on("disconnect")
 def handle_disconnect():
-    with clients_lock:
-        connected_clients.discard(request.sid)
-    print(f"Client disconnected: {request.sid if hasattr(request, 'sid') else 'No SID'}")
-    emit_connected_clients()
+    with users_lock:
+        connected_users.discard(request.sid)
+    print(f"User disconnected: {request.sid if hasattr(request, 'sid') else 'No SID'}")
+    emit_connected_users()
 
-# Event handler for receiving a message from a client
+# Event handler for receiving a message from a user
 @socketio.on("send_message")
 def handle_send_message(data):
     user_sid = request.sid
