@@ -113,14 +113,14 @@ def send_response_message(data):
         if not from_:
             logger.warning("No sender found in the message")
             return
-        from_id = [client["id"] for client in clients if client["whatsapp"] == from_]
+        from_client = [client for client in clients if client["whatsapp"] == from_]
         content = message.get("text", {}).get("body", "")
         to = "self"
         time_stamp = message.get("timestamp", "")
 
         logger.info(f"Received WhatsApp message from {from_}: {content}")
         socketio.emit("receive_message", {
-            "from": from_id[0] if from_id else None,
+            "from": from_client[0] if from_client else None,
             "content": content,
             "to": to,
             "timestamp": time_stamp
