@@ -148,6 +148,13 @@ def handle_webhook():
     send_response_message(data)
     return "Webhook event received", 200
 
+@app.route("/", methods=["GET"])
+def index():
+    """
+    Simple index route to check if the server is running.
+    """
+    return "WhatsApp Webhook Server is running!", 200
+
 @app.route("/clients", methods=["GET"])
 def get_clients():
     """
