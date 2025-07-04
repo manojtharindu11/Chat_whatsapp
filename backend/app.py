@@ -91,17 +91,16 @@ def send_response_message(data):
     message = messages[0]
     if message.get("type") == "text":
         from_ = message.get("from", "")
-        from_id = [client["id"] for client in clients if client["whatsapp"] == from_]
         if not from_:
             logger.warning("No sender found in the message")
             return
-
+        from_id = [client["id"] for client in clients if client["whatsapp"] == from_]
         content = message.get("text", {}).get("body", "")
         to = "self"
         time_stamp = message.get("timestamp", "")
 
         socketio.emit("receive_message", {
-            "from": from_id,
+            "from": from_id[0],
             "content": content,
             "to": to,
             "timestamp": time_stamp
@@ -159,13 +158,18 @@ def handle_disconnect():
 # Event handler for receiving a message from a user
 @socketio.on("send_message")
 def handle_send_message(data):
-    user_sid = request.sid
-    if user_sid:
-        response = send_message(data)
-        socketio.emit("send_message_response", response, to=user_sid)
-    else:
-        # Broadcast message to all clients
-        socketio.emit("send_message_response", "Something went wrong", broadcast=True)
+    response = send_message(data)
+    socketio.emit("send_message_response", response)
+        
+@socketio.on("send_message_from_whatsapp")
+def handle_send_message_from_whatsapp(data):
+    print(f"Received message from WhatsApp: {data}")
+    socketio.emit("receive_message", {
+            "from": data.get("from"),
+            "content": data.get("content"),
+            "to": data.get("to"),
+            "timestamp": data.get("timestamp")
+    })
 
 # Entry point: run the server with gevent and WebSocket support
 if __name__ == "__main__":
