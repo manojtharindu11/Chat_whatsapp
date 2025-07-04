@@ -38,9 +38,7 @@ users_lock = Semaphore()
 
 # List of clients (mock data)
 clients = [
-    {"id": 1, "name": "Nilanthini", "whatsapp": "0771234567"},
-    {"id": 2, "name": "Chamod", "whatsapp": "0777654321"},
-    {"id": 3, "name": "Manoj", "whatsapp": "94763241208"},
+    {"id": 1, "name": "Manoj", "whatsapp": "94763241208"},
 ]
 
 def send_message(data):
@@ -158,13 +156,19 @@ def get_clients():
     logger.info("Client list requested")
     return {"clients": clients}
 
-@app.route("/", methods=["GET"])
-def index():
+@app.route("/clients", methods=["POST"])
+def add_client():
     """
-    Root endpoint for health check or welcome message.
+    Endpoint to add a new client.
     """
-    return "Welcome to the WhatsApp Chat Server! Checkout README.md for more details."
-
+    new_client = {
+        "id": len(clients) + 1,
+        "name": request.json.get("name"),
+        "whatsapp": request.json.get("whatsapp")
+    }
+    clients.append(new_client)
+    logger.info(f"New client added: {new_client}")
+    return {"client": new_client}, 201
 
 # Event handler for new user connection
 @socketio.on("connect")

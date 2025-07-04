@@ -9,7 +9,12 @@ function Chat() {
   const [chatMessages, setChatMessages] = useState(initialChatMessages);
   const [inputValue, setInputValue] = useState("");
 
-  // Inline styles for minimal readability
+  const [showNewChatForm, setShowNewChatForm] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [selectedCountryCode, setSelectedCountryCode] = useState("+94");
+  const [countryCodes, setCountryCodes] = useState([]);
+
   const styles = {
     container: {
       fontFamily: "sans-serif",
@@ -102,96 +107,186 @@ function Chat() {
 
   useEffect(() => {
     fetchClients();
+    fetchCountryCodes();
   }, []);
 
   useEffect(() => {
     socket.connect();
-
-    socket.on("connect", () => {
-      console.log("connected", socket.id);
-    });
-
-    socket.on("receive_message", (data) => {
-      console.log("message received", data);
-      handleReceivedMessages(data);
-    });
-
-    socket.on("send_message_response", (data) => {
-      console.log("message sent response", data);
-    });
-
-    socket.on("connected_users", (data) => {
-      console.log("Connected users:", data);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
+    socket.on("connect", () => console.log("connected", socket.id));
+    socket.on("receive_message", handleReceivedMessages);
+    socket.on("send_message_response", (data) =>
+      console.log("message sent response", data)
+    );
+    return () => socket.disconnect();
   }, []);
-
-  const handleReceivedMessages = (data) => {
-    if (data && data.from && data.to && data.content && data.timestamp) {
-      setChatMessages((prev) => ({
-        ...prev,
-        [data.from.name]: [...(prev[data.from] || []), data],
-      }));
-    }
-  };
 
   const fetchClients = async () => {
     try {
-      const response = await fetch(import.meta.env.VITE_API_URL + "/clients");
-      const data = await response.json();
-      if (Array.isArray(data.clients) && data.clients.length > 0) {
-        setClients(data.clients);
-        setSelectedClient(data.clients[0].id);
-      } else {
-        setClients([]);
-        setSelectedClient(undefined);
-      }
-    } catch (err) {
+      const res = await fetch(import.meta.env.VITE_API_URL + "/clients");
+      const data = await res.json();
+      setClients(data.clients || []);
+      setSelectedClient(data.clients?.[0]?.id);
+    } catch {
       setClients([]);
       setSelectedClient(undefined);
+    }
+  };
+
+  const fetchCountryCodes = async () => {
+    try {
+      const res = await fetch(
+        "https://countriesnow.space/api/v0.1/countries/codes"
+      );
+      const data = await res.json();
+      const codes = data.data
+        .map((c) => ({
+          name: c.name,
+          code: c.dial_code?.startsWith("+") ? c.dial_code : `+${c.dial_code}`,
+        }))
+        .filter((c) => c.code)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      setCountryCodes(codes);
+    } catch (e) {
+      console.error("Failed to fetch country codes:", e);
+    }
+  };
+
+  const handleReceivedMessages = (data) => {
+    if (data?.from?.id && data.content) {
+      setChatMessages((prev) => ({
+        ...prev,
+        [data.from.id]: [
+          ...(prev[data.from.id] || []),
+          { from: data.from.name, text: data.content },
+        ],
+      }));
     }
   };
 
   const handleSend = (e) => {
     e.preventDefault();
     const message = inputValue.trim();
-    if (message) {
-      const messageObj = {
-        from: "Me",
-        content: message,
-        to: selectedClient,
-        timestamp: new Date().toISOString(),
-      };
-      console.log("Sending message:", messageObj);
-      socket.emit("send_message", messageObj);
-      setChatMessages((prev) => ({
-        ...prev,
-        [selectedClient]: [
-          ...prev[selectedClient],
-          { from: "Me", text: message },
-        ],
-      }));
-      setInputValue("");
+    if (!message) return;
+    socket.emit("send_message", {
+      from: "Me",
+      content: message,
+      to: selectedClient,
+      timestamp: new Date().toISOString(),
+    });
+    setChatMessages((prev) => ({
+      ...prev,
+      [selectedClient]: [
+        ...(prev[selectedClient] || []),
+        { from: "Me", text: message },
+      ],
+    }));
+    setInputValue("");
+  };
+
+  const handleNewChatSubmit = async () => {
+    if (!newName || !newPhone) {
+      return alert("Please fill in both name and phone number.");
+    }
+
+    // Validate phone number: must be digits only and between 6 to 15 digits
+    const phoneRegex = /^[0-9]{6,15}$/;
+    if (!phoneRegex.test(newPhone)) {
+      return alert(
+        "Invalid phone number. Only digits allowed, between 6 to 15 characters."
+      );
+    }
+
+    const fullNumber = selectedCountryCode.replace("+", "") + newPhone;
+
+    try {
+      await fetch(import.meta.env.VITE_API_URL + "/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName, whatsapp: fullNumber }),
+      });
+      setNewName("");
+      setNewPhone("");
+      setShowNewChatForm(false);
+      fetchClients();
+    } catch (e) {
+      alert("Failed to add new chat");
     }
   };
 
-  // Helper to get client info
-  const selectedClientObj = clients.find((c) => c.id === selectedClient);
   const getInitials = (name) =>
     name
-      ? name
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-          .toUpperCase()
-      : "";
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+  const selectedClientObj = clients.find((c) => c.id === selectedClient);
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Chat-Whatsapp</h1>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <h1 style={styles.title}>Chat-Whatsapp</h1>
+        <button style={styles.button} onClick={() => setShowNewChatForm(true)}>
+          ➕ New Chat
+        </button>
+      </div>
+
+      {showNewChatForm && (
+        <div
+          style={{
+            border: "1px solid #ccc",
+            padding: 12,
+            borderRadius: 8,
+            marginBottom: 16,
+            background: "#f9f9f9",
+          }}
+        >
+          <h3 style={{ marginBottom: 8 }}>Add New Chat</h3>
+          <input
+            style={{ ...styles.input, marginBottom: 8 }}
+            placeholder="Name"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+          />
+          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <select
+              value={selectedCountryCode}
+              onChange={(e) => setSelectedCountryCode(e.target.value)}
+              style={{ ...styles.input, width: "100%" }}
+            >
+              {countryCodes.map((c, index) => (
+                <option key={index} value={c.code}>
+                  {c.name} ({c.code})
+                </option>
+              ))}
+            </select>
+            <input
+              placeholder="Whatsapp Number"
+              value={newPhone}
+              onChange={(e) => setNewPhone(e.target.value)}
+              style={styles.input}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button style={styles.button} onClick={handleNewChatSubmit}>
+              Submit
+            </button>
+            <button
+              onClick={() => setShowNewChatForm(false)}
+              style={{ ...styles.button, background: "#aaa" }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       <div style={styles.flex}>
         <div style={styles.sidebar}>
           <h2 style={styles.sidebarTitle}>All Chats</h2>
