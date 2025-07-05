@@ -222,6 +222,9 @@ function Chat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName, whatsapp: fullNumber }),
       });
+      alert(
+        "Please reply to message received as 'Hello, this is ur order' to start the chat. Otherwise this won't work."
+      );
       setNewName("");
       setNewPhone("");
       setShowNewChatForm(false);
