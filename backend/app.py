@@ -41,6 +41,44 @@ clients = [
     {"id": 1, "name": "Manoj", "whatsapp": "94763241208"},
 ]
 
+def send_initial_message(whatsapp):
+    """
+    Send a template message named 'initial_bill' to initiate a conversation.
+    """
+    business_phone_number_id = YOUR_PHONE_NUMBER_ID
+    url = f'https://graph.facebook.com/v18.0/{business_phone_number_id}/messages'
+
+    headers = {
+        "Authorization": f"Bearer {GRAPH_API_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": whatsapp,
+        "type": "template",
+        "template": {
+            "name": "initial_bill",
+            "language": {
+                "code": "en"
+            }
+        }
+    }
+
+    logger.info(f"📤 Sending initial message to {whatsapp}")
+
+    try:
+        response = requests.post(url=url, headers=headers, json=payload)
+        if response.status_code == 200:
+            logger.info("✅ Initial message sent successfully")
+        else:
+            logger.error(f"❌ Failed to send initial message: {response.status_code} - {response.text}")
+        return response.json()
+    except Exception as e:
+        logger.exception(f"❌ Exception occurred while sending initial message: {e}")
+        return {"error": str(e)}
+    
+
 def send_message(data):
     """
     Send a WhatsApp message using the Facebook Graph API.
@@ -168,14 +206,17 @@ def add_client():
     """
     Endpoint to add a new client.
     """
+    
+    whatsapp = request.json.get("whatsapp")
     new_client = {
         "id": len(clients) + 1,
         "name": request.json.get("name"),
-        "whatsapp": request.json.get("whatsapp")
+        "whatsapp": whatsapp
     }
     clients.append(new_client)
     logger.info(f"New client added: {new_client}")
-    return {"client": new_client}, 201
+    response_from_initial_message = send_initial_message(whatsapp)
+    return {"client": new_client, "initial_message_response": response_from_initial_message}, 201
 
 # Event handler for new user connection
 @socketio.on("connect")
